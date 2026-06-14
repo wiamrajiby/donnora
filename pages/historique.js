@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
+import { getHistorique } from "../services/resultatsService";
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
@@ -70,8 +71,18 @@ export default function Historique() {
   var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
   var _filter = useState("Tous"), filter = _filter[0], setFilter = _filter[1];
   var _search = useState(""), search = _search[0], setSearch = _search[1];
+  var _detReelles = useState([]), detReelles = _detReelles[0], setDetReelles = _detReelles[1];
+  var _loading = useState(true), loading = _loading[0], setLoading = _loading[1];
 
-  useEffect(function() { setOk(true); }, []);
+  useEffect(function() {
+  setOk(true);
+  getHistorique().then(function(result) {
+    if (result.succes && result.resultats.length > 0) {
+      setDetReelles(result.resultats);
+    }
+    setLoading(false);
+  });
+}, []);
 
   var groupeColors = {
     "A+":"#2563EB","A-":"#3B82F6","B+":"#DC2626","B-":"#EF4444",
@@ -79,18 +90,33 @@ export default function Historique() {
   };
 
   /* Historique des détections reçues via Firebase */
-  var detections = [
-    { id:"R-001", groupe:"B-", confiance:97.5, date:"12/05/2026", heure:"14:30", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-042", statut:"transmis", donneurs_trouves:12 },
-    { id:"R-002", groupe:"O+", confiance:98.1, date:"12/05/2026", heure:"11:15", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-041", statut:"transmis", donneurs_trouves:18 },
-    { id:"R-003", groupe:"A+", confiance:96.3, date:"11/05/2026", heure:"22:48", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-040", statut:"transmis", donneurs_trouves:8 },
-    { id:"R-004", groupe:"AB-", confiance:91.2, date:"11/05/2026", heure:"16:30", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-039", statut:"transmis", donneurs_trouves:4 },
-    { id:"R-005", groupe:"O-", confiance:99.1, date:"10/05/2026", heure:"09:05", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-038", statut:"transmis", donneurs_trouves:22 },
-    { id:"R-006", groupe:"B+", confiance:95.8, date:"10/05/2026", heure:"03:22", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-037", statut:"transmis", donneurs_trouves:10 },
-    { id:"R-007", groupe:"A-", confiance:93.4, date:"09/05/2026", heure:"19:10", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-036", statut:"transmis", donneurs_trouves:6 },
-    { id:"R-008", groupe:"O+", confiance:97.9, date:"09/05/2026", heure:"14:45", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-035", statut:"transmis", donneurs_trouves:18 },
-    { id:"R-009", groupe:"AB+", confiance:88.5, date:"08/05/2026", heure:"20:30", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-034", statut:"faible_confiance", donneurs_trouves:2 },
-    { id:"R-010", groupe:"B-", confiance:96.7, date:"08/05/2026", heure:"08:15", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-033", statut:"transmis", donneurs_trouves:12 }
-  ];
+  var detectionsFictives = [
+  { id:"R-001", groupe:"B-", confiance:97.5, date:"12/05/2026", heure:"14:30", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-042", statut:"transmis", donneurs_trouves:12 },
+  { id:"R-002", groupe:"O+", confiance:98.1, date:"12/05/2026", heure:"11:15", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-041", statut:"transmis", donneurs_trouves:18 },
+  { id:"R-003", groupe:"A+", confiance:96.3, date:"11/05/2026", heure:"22:48", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-040", statut:"transmis", donneurs_trouves:8 },
+  { id:"R-004", groupe:"AB-", confiance:91.2, date:"11/05/2026", heure:"16:30", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-039", statut:"transmis", donneurs_trouves:4 },
+  { id:"R-005", groupe:"O-", confiance:99.1, date:"10/05/2026", heure:"09:05", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-038", statut:"transmis", donneurs_trouves:22 },
+  { id:"R-006", groupe:"B+", confiance:95.8, date:"10/05/2026", heure:"03:22", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-037", statut:"transmis", donneurs_trouves:10 },
+  { id:"R-007", groupe:"A-", confiance:93.4, date:"09/05/2026", heure:"19:10", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-036", statut:"transmis", donneurs_trouves:6 },
+  { id:"R-008", groupe:"O+", confiance:97.9, date:"09/05/2026", heure:"14:45", ambulance:"AMB-03", hopital:"CHU Casablanca", patient:"PAT-035", statut:"transmis", donneurs_trouves:18 },
+  { id:"R-009", groupe:"AB+", confiance:88.5, date:"08/05/2026", heure:"20:30", ambulance:"AMB-07", hopital:"CHU Rabat", patient:"PAT-034", statut:"faible_confiance", donneurs_trouves:2 },
+  { id:"R-010", groupe:"B-", confiance:96.7, date:"08/05/2026", heure:"08:15", ambulance:"AMB-12", hopital:"CHU Tanger", patient:"PAT-033", statut:"transmis", donneurs_trouves:12 }
+];
+
+var detections = detReelles.length > 0 ? detReelles.map(function(r) {
+  return {
+    id: r.id || "R-???",
+    groupe: r.groupe_sanguin_detecte || r.groupe,
+    confiance: r.confiance,
+    date: r.date || new Date(r.timestamp).toLocaleDateString("fr-FR"),
+    heure: r.heure || new Date(r.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    ambulance: r.ambulance_id,
+    hopital: r.hopital,
+    patient: r.patient_id,
+    statut: r.statut,
+    donneurs_trouves: r.donneurs_trouves || 0
+  };
+}) : detectionsFictives;
 
   var filtered = detections.filter(function(d) {
     var matchFilter = filter === "Tous" || d.groupe === filter;
