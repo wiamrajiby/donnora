@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import { connecter } from "../services/authService";
 
 /* ── Composants Icônes SVG ── */
 function BloodDrop(p) {
@@ -91,19 +92,23 @@ export default function Accueil() {
     return function() { window.removeEventListener("scroll", f); observer.disconnect(); };
   }, []);
 
-  function doLogin() {
-    if (!email || !pw) return;
-    setLoginState("loading");
+  async function doLogin() {
+  if (!email || !pw) return;
+  setLoginState("loading");
+  const result = await connecter(email, pw);
+  if (result.succes) {
+    setLoginState("success");
+    setConnecte(true);
     setTimeout(function() {
-      setLoginState("success");
-      setConnecte(true);
-      setTimeout(function() {
-        setShowLogin(false);
-        setLoginState("idle");
-        r.push("/home");
-      }, 2200);
-    }, 1500);
+      setShowLogin(false);
+      setLoginState("idle");
+      r.push("/home");
+    }, 2200);
+  } else {
+    setLoginState("idle");
+    alert(result.erreur);
   }
+}
   function doLogout() { setConnecte(false); setEmail(""); setPw(""); }
 
   return (
