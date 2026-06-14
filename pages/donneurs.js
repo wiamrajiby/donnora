@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
+import { getTousDonneurs } from "../services/donneursService";
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
@@ -52,19 +53,14 @@ function AmbulanceIcon(p) {
 function AnimCounter(props) {
   var _v = useState(0), val = _v[0], setVal = _v[1];
   useEffect(function() {
-    var target = props.to;
-    var dur = 1400;
-    var start = Date.now();
-    function tick() {
-      var elapsed = Date.now() - start;
-      var progress = Math.min(elapsed / dur, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      setVal(Math.floor(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
+  setOk(true);
+  getTousDonneurs().then(function(result) {
+    if (result.succes && result.donneurs.length > 0) {
+      setDonneursReels(result.donneurs);
     }
-    var t = setTimeout(function() { requestAnimationFrame(tick); }, props.delay || 0);
-    return function() { clearTimeout(t); };
-  }, []);
+    setLoading(false);
+  });
+}, []);
   return <span>{val}</span>;
 }
 
@@ -192,31 +188,35 @@ export default function Donneurs() {
   var _villeFilter = useState("Toutes"), villeFilter = _villeFilter[0], setVilleFilter = _villeFilter[1];
   var _dispoFilter = useState("Tous"), dispoFilter = _dispoFilter[0], setDispoFilter = _dispoFilter[1];
   var _showSuggestions = useState(false), showSugg = _showSuggestions[0], setShowSugg = _showSuggestions[1];
+  var _donneursReels = useState([]), donneursReels = _donneursReels[0], setDonneursReels = _donneursReels[1];
+  var _loading = useState(true), loading = _loading[0], setLoading = _loading[1];
 
   useEffect(function() { setOk(true); }, []);
 
   /* Compatibilité : combien de groupes peuvent recevoir de ce donneur */
   var compatMap = { "O-":8, "O+":4, "A-":4, "A+":2, "B-":4, "B+":2, "AB-":4, "AB+":1 };
 
-  var donneurs = [
-    { id:1, nom:"Ahmed Ben Ali", telephone:"+212 6 12 34 56 78", groupe_sanguin:"A+", ville:"Casablanca", disponible:true, derniere_date_don:"2026-01-15" },
-    { id:2, nom:"Fatima Zohra", telephone:"+212 6 98 76 54 32", groupe_sanguin:"B-", ville:"Rabat", disponible:true, derniere_date_don:"2026-03-20" },
-    { id:3, nom:"Youssef El Amrani", telephone:"+212 6 11 22 33 44", groupe_sanguin:"O-", ville:"Tanger", disponible:false, derniere_date_don:"2026-02-10" },
-    { id:4, nom:"Khadija Bennani", telephone:"+212 6 55 66 77 88", groupe_sanguin:"A+", ville:"Marrakech", disponible:true, derniere_date_don:"2026-04-05" },
-    { id:5, nom:"Omar Idrissi", telephone:"+212 6 43 21 87 65", groupe_sanguin:"O-", ville:"Casablanca", disponible:true, derniere_date_don:"2025-12-28" },
-    { id:6, nom:"Nadia Tazi", telephone:"+212 6 77 88 99 00", groupe_sanguin:"O-", ville:"Tanger", disponible:true, derniere_date_don:"2026-02-14" },
-    { id:7, nom:"Hassan El Fassi", telephone:"+212 6 22 33 44 55", groupe_sanguin:"B-", ville:"Casablanca", disponible:false, derniere_date_don:"2026-01-30" },
-    { id:8, nom:"Amina Chakir", telephone:"+212 6 11 00 99 88", groupe_sanguin:"O+", ville:"Casablanca", disponible:true, derniere_date_don:"2026-03-12" },
-    { id:9, nom:"Rachid Moussaoui", telephone:"+212 6 33 44 55 66", groupe_sanguin:"AB+", ville:"Rabat", disponible:true, derniere_date_don:"2026-04-18" },
-    { id:10, nom:"Salma Berrada", telephone:"+212 6 66 55 44 33", groupe_sanguin:"B+", ville:"Marrakech", disponible:true, derniere_date_don:"2026-03-01" },
-    { id:11, nom:"Mehdi Alaoui", telephone:"+212 6 99 88 77 66", groupe_sanguin:"A-", ville:"Tanger", disponible:false, derniere_date_don:"2025-11-20" },
-    { id:12, nom:"Leila Mansour", telephone:"+212 6 44 33 22 11", groupe_sanguin:"AB-", ville:"Casablanca", disponible:true, derniere_date_don:"2026-04-22" },
-    { id:13, nom:"Karim Hajji", telephone:"+212 6 88 77 66 55", groupe_sanguin:"O+", ville:"Rabat", disponible:true, derniere_date_don:"2026-02-28" },
-    { id:14, nom:"Zineb El Ouardi", telephone:"+212 6 12 00 34 56", groupe_sanguin:"B+", ville:"F\u00E8s", disponible:true, derniere_date_don:"2026-01-10" },
-    { id:15, nom:"Hamza Benjelloun", telephone:"+212 6 55 44 33 22", groupe_sanguin:"A+", ville:"Casablanca", disponible:false, derniere_date_don:"2026-03-15" },
-    { id:16, nom:"Sara Chraibi", telephone:"+212 6 67 89 01 23", groupe_sanguin:"O-", ville:"F\u00E8s", disponible:true, derniere_date_don:"2026-04-10" }
-  ].map(function(d) { d.compat = compatMap[d.groupe_sanguin] || 1; return d; });
+  var donneursFictifs = [
+  { id:1, nom:"Ahmed Ben Ali", telephone:"+212 6 12 34 56 78", groupe_sanguin:"A+", ville:"Casablanca", disponible:true, derniere_date_don:"2026-01-15" },
+  { id:2, nom:"Fatima Zohra", telephone:"+212 6 98 76 54 32", groupe_sanguin:"B-", ville:"Rabat", disponible:true, derniere_date_don:"2026-03-20" },
+  { id:3, nom:"Youssef El Amrani", telephone:"+212 6 11 22 33 44", groupe_sanguin:"O-", ville:"Tanger", disponible:false, derniere_date_don:"2026-02-10" },
+  { id:4, nom:"Khadija Bennani", telephone:"+212 6 55 66 77 88", groupe_sanguin:"A+", ville:"Marrakech", disponible:true, derniere_date_don:"2026-04-05" },
+  { id:5, nom:"Omar Idrissi", telephone:"+212 6 43 21 87 65", groupe_sanguin:"O-", ville:"Casablanca", disponible:true, derniere_date_don:"2025-12-28" },
+  { id:6, nom:"Nadia Tazi", telephone:"+212 6 77 88 99 00", groupe_sanguin:"O-", ville:"Tanger", disponible:true, derniere_date_don:"2026-02-14" },
+  { id:7, nom:"Hassan El Fassi", telephone:"+212 6 22 33 44 55", groupe_sanguin:"B-", ville:"Casablanca", disponible:false, derniere_date_don:"2026-01-30" },
+  { id:8, nom:"Amina Chakir", telephone:"+212 6 11 00 99 88", groupe_sanguin:"O+", ville:"Casablanca", disponible:true, derniere_date_don:"2026-03-12" },
+  { id:9, nom:"Rachid Moussaoui", telephone:"+212 6 33 44 55 66", groupe_sanguin:"AB+", ville:"Rabat", disponible:true, derniere_date_don:"2026-04-18" },
+  { id:10, nom:"Salma Berrada", telephone:"+212 6 66 55 44 33", groupe_sanguin:"B+", ville:"Marrakech", disponible:true, derniere_date_don:"2026-03-01" },
+  { id:11, nom:"Mehdi Alaoui", telephone:"+212 6 99 88 77 66", groupe_sanguin:"A-", ville:"Tanger", disponible:false, derniere_date_don:"2025-11-20" },
+  { id:12, nom:"Leila Mansour", telephone:"+212 6 44 33 22 11", groupe_sanguin:"AB-", ville:"Casablanca", disponible:true, derniere_date_don:"2026-04-22" },
+  { id:13, nom:"Karim Hajji", telephone:"+212 6 88 77 66 55", groupe_sanguin:"O+", ville:"Rabat", disponible:true, derniere_date_don:"2026-02-28" },
+  { id:14, nom:"Zineb El Ouardi", telephone:"+212 6 12 00 34 56", groupe_sanguin:"B+", ville:"F\u00E8s", disponible:true, derniere_date_don:"2026-01-10" },
+  { id:15, nom:"Hamza Benjelloun", telephone:"+212 6 55 44 33 22", groupe_sanguin:"A+", ville:"Casablanca", disponible:false, derniere_date_don:"2026-03-15" },
+  { id:16, nom:"Sara Chraibi", telephone:"+212 6 67 89 01 23", groupe_sanguin:"O-", ville:"F\u00E8s", disponible:true, derniere_date_don:"2026-04-10" }
+];
 
+var donneurs = (donneursReels.length > 0 ? donneursReels : donneursFictifs)
+  .map(function(d) { d.compat = compatMap[d.groupe_sanguin] || 1; return d; });
   var groupeColors = {
     "A+":"#2563EB","A-":"#3B82F6","B+":"#DC2626","B-":"#EF4444",
     "AB+":"#7C3AED","AB-":"#8B5CF6","O+":"#16A34A","O-":"#22C55E"
