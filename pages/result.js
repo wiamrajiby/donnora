@@ -7,6 +7,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
+import { ecouterDerniereDetection } from "../services/realtimeService";
+import { getDonneursCompatibles } from "../services/donneursService";
+import { enregistrerResultat } from "../services/resultatsService";
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
@@ -88,13 +91,22 @@ export default function Result() {
   var _phase = useState(0), phase = _phase[0], setPhase = _phase[1];
   /* phase: 0 = en attente de réception, 1 = résultat reçu, 2 = préparation confirmée */
   var _prepping = useState(false), prepping = _prepping[0], setPrepping = _prepping[1];
+  var _detection = useState(null), detection = _detection[0], setDetection = _detection[1];
+  var _donneursReels = useState([]), donneursReels = _donneursReels[0], setDonneursReels = _donneursReels[1];
 
   useEffect(function() {
-    setOk(true);
-    /* Simulation : notification reçue du robot via Firebase après 2s */
-    var t1 = setTimeout(function() { setPhase(1); }, 2000);
-    return function() { clearTimeout(t1); };
-  }, []);
+  setOk(true);
+  var unsub = ecouterDerniereDetection("AMB-03", async function(data) {
+    setDetection(data);
+    setPhase(1);
+    await enregistrerResultat(data);
+    var result = await getDonneursCompatibles(data.groupe);
+    if (result.succes && result.donneurs.length > 0) {
+      setDonneursReels(result.donneurs);
+    }
+  });
+  return function() { unsub(); };
+}, []);
 
   function confirmPreparation() {
     setPrepping(true);
@@ -102,25 +114,27 @@ export default function Result() {
   }
 
   /* Données reçues du robot via Firebase */
-  var reception = {
-    groupe: "B-",
-    confiance: 97.5,
-    timestamp: "12/05/2026 14:30:00",
-    ambulance_id: "AMB-03",
-    patient_id: "PAT-042",
-    hopital: "CHU Casablanca",
-    eta: "8 min",
-    robot_model: "Donnora v1.0"
-  };
+  var reception = detection || {
+  groupe: "B-",
+  confiance: 97.5,
+  timestamp: "12/05/2026 14:30:00",
+  ambulance_id: "AMB-03",
+  patient_id: "PAT-042",
+  hopital: "CHU Casablanca",
+  eta: "8 min",
+  robot_model: "Donnora v1.0"
+};
 
   /* Table de compatibilité sanguine — logique côté NestJS */
-  var compatibles = [
-    { nom: "Fatima Zohra", groupe: "B-", ville: "Rabat", tel: "+212 6 98 76 54 32", dispo: true },
-    { nom: "Omar Idrissi", groupe: "O-", ville: "Casablanca", tel: "+212 6 43 21 87 65", dispo: true },
-    { nom: "Nadia Tazi", groupe: "O-", ville: "Tanger", tel: "+212 6 77 88 99 00", dispo: true },
-    { nom: "Hassan El Fassi", groupe: "B-", ville: "Casablanca", tel: "+212 6 22 33 44 55", dispo: false },
-    { nom: "Amina Chakir", groupe: "O-", ville: "Casablanca", tel: "+212 6 11 00 99 88", dispo: true }
-  ];
+  var compatibles = donneursReels.length > 0 ? donneursReels.map(function(d) {
+  return { nom: d.nom, groupe: d.groupe_sanguin, ville: d.ville, tel: d.telephone, dispo: d.disponible };
+}) : [
+  { nom: "Fatima Zohra", groupe: "B-", ville: "Rabat", tel: "+212 6 98 76 54 32", dispo: true },
+  { nom: "Omar Idrissi", groupe: "O-", ville: "Casablanca", tel: "+212 6 43 21 87 65", dispo: true },
+  { nom: "Nadia Tazi", groupe: "O-", ville: "Tanger", tel: "+212 6 77 88 99 00", dispo: true },
+  { nom: "Hassan El Fassi", groupe: "B-", ville: "Casablanca", tel: "+212 6 22 33 44 55", dispo: false },
+  { nom: "Amina Chakir", groupe: "O-", ville: "Casablanca", tel: "+212 6 11 00 99 88", dispo: true }
+];
 
   /* Chronologie — ce qui se passe côté robot, reçu via Firebase */
   var timeline = [
