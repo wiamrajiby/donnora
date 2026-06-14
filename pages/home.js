@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
+import { ecouterStatutAmbulance } from "../services/realtimeService";
+import { alerterHopital } from "../services/notificationsService";
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
@@ -75,17 +77,19 @@ export default function Home() {
   var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
   var _time = useState(""), time = _time[0], setTime = _time[1];
   var _date = useState(""), dateStr = _date[0], setDateStr = _date[1];
+  var _statut = useState("deconnecte"), statut = _statut[0], setStatut = _statut[1];
 
   useEffect(function() {
-    setOk(true);
-    function updateTime() {
+  setOk(true);
+  var unsubStatut = ecouterStatutAmbulance("AMB-03", setStatut);
+  function updateTime() {
       var now = new Date();
       setTime(now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       setDateStr(now.toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" }));
     }
     updateTime();
     var i = setInterval(updateTime, 1000);
-    return function() { clearInterval(i); };
+    return function() { clearInterval(i); unsubStatut(); };
   }, []);
 
   /* Données fictives */
@@ -163,7 +167,7 @@ export default function Home() {
               <h1 style={{ fontSize: 32, fontWeight: 800, color: "#111" }}>Tableau de bord</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#F0FDF4", padding: "6px 14px", borderRadius: 100, border: "1px solid #BBF7D0" }}>
                 <div className="status-dot"></div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }}>Robot connect&eacute;</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }}>{statut === "connecte" ? "Robot connecté" : statut === "en_route" ? "En route" : "Déconnecté"}</span>
               </div>
             </div>
             <p style={{ fontSize: 15, color: "#999" }}>{dateStr}</p>
@@ -270,7 +274,7 @@ export default function Home() {
             ].map(function(action, idx) {
               var Icon = action.icon;
               return (
-                <button key={action.label} className={"action-btn " + (ok ? "asr d" + (idx + 3) : "")} onClick={function(){ if(action.href !== "#") router.push(action.href); }}>
+                <button key={action.label} className={"action-btn " + (ok ? "asr d" + (idx + 3) : "")} onClick={function(){if (action.label === "Alerter l\u2019h\u00F4pital") {alerterHopital({groupe_sanguin: lastDetection.groupe,ambulance_id: lastDetection.ambulance,confiance: lastDetection.confiance,eta: "8 min",nb_donneurs: 12});} else if (action.href !== "#") {router.push(action.href);}}}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Icon size={18} color="#DC2626"/>
                   </div>
