@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
+import { deconnecter } from "../services/authService";
 
 /* ── Icônes SVG ── */
 function UserIcon(p) {
@@ -78,6 +79,10 @@ export default function Parametres() {
     setSaved(true);
     setTimeout(function() { setSaved(false); }, 3000);
   }
+  async function handleDeconnexion() {
+  await deconnecter();
+  router.push("/");
+}
 
   var sections = [
     { id: "profil", label: "Mon profil", Icon: UserIcon },
@@ -185,7 +190,7 @@ export default function Parametres() {
 
               <div style={{ borderTop: "1px solid #f0f0f0", margin: "8px 0" }}></div>
 
-              <button className="nav-item" onClick={function(){ router.push("/"); }} style={{ color: "#DC2626" }}>
+              <button className="nav-item" onClick={handleDeconnexion} style={{ color: "#DC2626" }}>
                 <LogoutIcon size={18} color="#DC2626"/>
                 {"D\u00E9connexion"}
               </button>
