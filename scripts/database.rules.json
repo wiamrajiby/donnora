@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "ambulances": {
+      "$ambulance_id": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "hopitaux": {
+      "$hopital_id": {
+        "alertes": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    }
+  }
+}
