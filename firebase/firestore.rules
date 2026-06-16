@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /donneurs/{id} {
+      allow read: if request.auth != null;
+      allow write: if true;
+    }
+    match /resultats/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /hopitaux/{id} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /utilisateurs/{userId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
