@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
-import { getTousDonneurs } from "../services/donneursService";
+
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
@@ -53,14 +53,19 @@ function AmbulanceIcon(p) {
 function AnimCounter(props) {
   var _v = useState(0), val = _v[0], setVal = _v[1];
   useEffect(function() {
-  setOk(true);
-  getTousDonneurs().then(function(result) {
-    if (result.succes && result.donneurs.length > 0) {
-      setDonneursReels(result.donneurs);
+    var target = props.to || 0;
+    var dur = 1400;
+    var start = Date.now();
+    function tick() {
+      var elapsed = Date.now() - start;
+      var progress = Math.min(elapsed / dur, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      setVal(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(tick);
     }
-    setLoading(false);
-  });
-}, []);
+    var t = setTimeout(function() { requestAnimationFrame(tick); }, props.delay || 0);
+    return function() { clearTimeout(t); };
+  }, []);
   return <span>{val}</span>;
 }
 

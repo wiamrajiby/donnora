@@ -7,22 +7,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
-import { ecouterDerniereDetection } from "../services/realtimeService";
-import { getDonneursCompatibles } from "../services/donneursService";
-import { enregistrerResultat } from "../services/resultatsService";
 
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
-  const s = p.size || 24;
-  const c = p.color || "#DC2626";
-  return (
-    <svg width={s} height={s} viewBox="0 0 80 100" fill="none">
-      <path d="M40 5C40 5 10 40 10 58a30 30 0 0060 0c0-18-30-53-30-53z" fill={c}/>
-      <polyline points="18,58 28,58 32,48 36,68 40,42 44,72 48,50 52,58 62,58" 
-        fill="none" stroke={c === "#fff" || c === "white" ? "#DC2626" : "white"} 
-        strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
+  return (<svg width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0c0-4.5-7-13-7-13z" fill={p.color||"#DC2626"}/></svg>);
 }
 function CheckIcon(p) {
   return (<svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke={p.color||"#16A34A"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>);
@@ -91,22 +79,13 @@ export default function Result() {
   var _phase = useState(0), phase = _phase[0], setPhase = _phase[1];
   /* phase: 0 = en attente de réception, 1 = résultat reçu, 2 = préparation confirmée */
   var _prepping = useState(false), prepping = _prepping[0], setPrepping = _prepping[1];
-  var _detection = useState(null), detection = _detection[0], setDetection = _detection[1];
-  var _donneursReels = useState([]), donneursReels = _donneursReels[0], setDonneursReels = _donneursReels[1];
 
   useEffect(function() {
-  setOk(true);
-  var unsub = ecouterDerniereDetection("AMB-03", async function(data) {
-    setDetection(data);
-    setPhase(1);
-    await enregistrerResultat(data);
-    var result = await getDonneursCompatibles(data.groupe);
-    if (result.succes && result.donneurs.length > 0) {
-      setDonneursReels(result.donneurs);
-    }
-  });
-  return function() { unsub(); };
-}, []);
+    setOk(true);
+    /* Simulation : notification reçue du robot via Firebase après 2s */
+    var t1 = setTimeout(function() { setPhase(1); }, 2000);
+    return function() { clearTimeout(t1); };
+  }, []);
 
   function confirmPreparation() {
     setPrepping(true);
@@ -114,27 +93,25 @@ export default function Result() {
   }
 
   /* Données reçues du robot via Firebase */
-  var reception = detection || {
-  groupe: "B-",
-  confiance: 97.5,
-  timestamp: "12/05/2026 14:30:00",
-  ambulance_id: "AMB-03",
-  patient_id: "PAT-042",
-  hopital: "CHU Casablanca",
-  eta: "8 min",
-  robot_model: "Donnora v1.0"
-};
+  var reception = {
+    groupe: "B-",
+    confiance: 97.5,
+    timestamp: "12/05/2026 14:30:00",
+    ambulance_id: "AMB-03",
+    patient_id: "PAT-042",
+    hopital: "CHU Casablanca",
+    eta: "8 min",
+    robot_model: "Donnora v1.0"
+  };
 
   /* Table de compatibilité sanguine — logique côté NestJS */
-  var compatibles = donneursReels.length > 0 ? donneursReels.map(function(d) {
-  return { nom: d.nom, groupe: d.groupe_sanguin, ville: d.ville, tel: d.telephone, dispo: d.disponible };
-}) : [
-  { nom: "Fatima Zohra", groupe: "B-", ville: "Rabat", tel: "+212 6 98 76 54 32", dispo: true },
-  { nom: "Omar Idrissi", groupe: "O-", ville: "Casablanca", tel: "+212 6 43 21 87 65", dispo: true },
-  { nom: "Nadia Tazi", groupe: "O-", ville: "Tanger", tel: "+212 6 77 88 99 00", dispo: true },
-  { nom: "Hassan El Fassi", groupe: "B-", ville: "Casablanca", tel: "+212 6 22 33 44 55", dispo: false },
-  { nom: "Amina Chakir", groupe: "O-", ville: "Casablanca", tel: "+212 6 11 00 99 88", dispo: true }
-];
+  var compatibles = [
+    { nom: "Fatima Zohra", groupe: "B-", ville: "Rabat", tel: "+212 6 98 76 54 32", dispo: true },
+    { nom: "Omar Idrissi", groupe: "O-", ville: "Casablanca", tel: "+212 6 43 21 87 65", dispo: true },
+    { nom: "Nadia Tazi", groupe: "O-", ville: "Tanger", tel: "+212 6 77 88 99 00", dispo: true },
+    { nom: "Hassan El Fassi", groupe: "B-", ville: "Casablanca", tel: "+212 6 22 33 44 55", dispo: false },
+    { nom: "Amina Chakir", groupe: "O-", ville: "Casablanca", tel: "+212 6 11 00 99 88", dispo: true }
+  ];
 
   /* Chronologie — ce qui se passe côté robot, reçu via Firebase */
   var timeline = [

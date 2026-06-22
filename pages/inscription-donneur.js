@@ -6,7 +6,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-
+import { db } from "../services/firebase.config";
+import { collection, addDoc } from "firebase/firestore";
 /* ── Icônes SVG ── */
 function BloodDrop(p) {
   return (<svg width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0c0-4.5-7-13-7-13z" fill={p.color||"#DC2626"}/></svg>);
@@ -68,8 +69,30 @@ export default function InscriptionDonneur() {
   }
   function submitForm() {
     if (cgu && sante && nom && prenom && age && poids && groupe && telephone && ville && email) {
-      setSubmitted(true);
-      /* En prod : POST vers Firebase via API NestJS */
+      
+      var nouveauDonneur = {
+        nom: nom,
+        prenom: prenom,
+        telephone: telephone,
+        email: email,
+        groupe_sanguin: groupe,
+        ville: ville,
+        age: parseInt(age),
+        poids: parseInt(poids),
+        disponible: true,
+        nb_dons: 0,
+        derniere_date_don: new Date().toISOString().split("T")[0],
+        created_at: new Date().toISOString()
+      };
+
+      addDoc(collection(db, "donneurs"), nouveauDonneur)
+        .then(function() {
+          setSubmitted(true);
+        })
+        .catch(function(err) {
+          console.error("Erreur Firebase :", err);
+          alert("Erreur lors de l'inscription. Réessayez.");
+        });
     }
   }
 
